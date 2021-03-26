@@ -94,7 +94,7 @@ function setup(core, options) {
     //   data[`async_${type}_init`] = counter.init;
     //   data[`async_${type}_destroy`] = counter.destroy;
     // }
-    // debug('write log file: %s, %o', filename, data);
+    debug('write log: %s, %o', filename, data);
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
       if (err) {
         core.log.error('zenweb:metric write log file error: %s', err.message);
