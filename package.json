@@ -1,0 +1,37 @@
+{
+  "name": "@zenweb/metric",
+  "version": "1.0.0",
+  "description": "Zenweb Metric module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "YeFei",
+    "email": "316606233@qq.com"
+  },
+  "keywords": [
+    "web",
+    "app",
+    "http",
+    "framework",
+    "metric",
+    "koa"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yefei/zenweb-metric.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yefei/zenweb-metric/issues"
+  },
+  "devDependencies": {
+    "eslint": "^7.16.0",
+    "koa": "^2.13.1",
+    "zenweb": "^1.5.1"
+  },
+  "dependencies": {
+    "debug": "^4.3.1"
+  }
+}
