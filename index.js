@@ -66,18 +66,17 @@ function setup(core, options) {
 
   setInterval(() => {
     const elapsedTime = hrtime2ms(process.hrtime(lastSampleTime));
+    const cpuUsage = process.cpuUsage(lastSampleCpuUsage);
     const now = new Date();
     const m = now.getMonth() + 1;
     const d = now.getDate();
     const ymd = `${now.getFullYear()}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
     const filename = path.join(options.logDir, `zenweb-app-metric.${ymd}.${os.hostname()}.log`);
-    lastSampleCpuUsage = process.cpuUsage(lastSampleCpuUsage);
-    lastSampleTime = process.hrtime();
     const mem = process.memoryUsage();
     const loadavg = os.loadavg();
     const data = {
       timestamp: Math.round(now / 1000),
-      cpu_percentage: (lastSampleCpuUsage.user + lastSampleCpuUsage.system) / 1000 / elapsedTime,
+      cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
       event_delay: Math.max(0, elapsedTime - sampleInterval),
       mem_rss: mem.rss,
       mem_heap_total: mem.heapTotal,
@@ -100,6 +99,9 @@ function setup(core, options) {
         core.log.error('zenweb:metric write log file error: %s', err.message);
       }
     });
+    // reset
+    lastSampleCpuUsage = process.cpuUsage();
+    lastSampleTime = process.hrtime();
   }, sampleInterval);
 }
 
