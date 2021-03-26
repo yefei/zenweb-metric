@@ -16,7 +16,7 @@ function hrtime2ms(time) {
 function setup(core, options) {
   options = Object.assign({
     logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
-    logInterval: 60,
+    logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
     // asyncHooks: ['TCPCONNECTWRAP', 'HTTPINCOMINGMESSAGE', 'HTTPCLIENTREQUEST'],
   }, options);
   debug('options: %o', options);
@@ -94,7 +94,7 @@ function setup(core, options) {
     //   data[`async_${type}_init`] = counter.init;
     //   data[`async_${type}_destroy`] = counter.destroy;
     // }
-    debug('write log file: %s, %o', filename, data);
+    // debug('write log file: %s, %o', filename, data);
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
       if (err) {
         core.log.error('zenweb:metric write log file error: %s', err.message);

@@ -1,6 +1,6 @@
 {
   "name": "@zenweb/metric",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Zenweb Metric module",
   "main": "index.js",
   "scripts": {
