@@ -7,6 +7,5 @@ config:
 {
   logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
   logInterval: 60,
-  asyncHooks: ['TCPCONNECTWRAP', 'HTTPINCOMINGMESSAGE', 'HTTPCLIENTREQUEST'],
 }
 ```
