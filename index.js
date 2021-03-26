@@ -78,10 +78,12 @@ function setup(core, options) {
     const m = now.getMonth() + 1;
     const d = now.getDate();
     const ymd = `${now.getFullYear()}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
-    const filename = path.join(options.logDir, `zenweb-metric.${ymd}.${os.hostname()}.log`);
+    const filename = path.join(options.logDir, `zenweb-metric.${ymd}.log`);
     const mem = process.memoryUsage();
     const loadavg = os.loadavg();
     const data = {
+      hostname: os.hostname(),
+      pid: process.pid,
       timestamp: Math.round(now / 1000),
       cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
       event_delay: Math.max(0, elapsedTime - sampleInterval),
