@@ -60,6 +60,8 @@ function setup(core, options) {
   }
   */
 
+  const name = `${os.hostname()}:${process.pid}`;
+  const cpuCount = os.cpus().length;
   const sampleInterval = options.logInterval * 1000;
   let lastSampleCpuUsage = process.cpuUsage();
   let lastSampleTime = process.hrtime();
@@ -80,10 +82,8 @@ function setup(core, options) {
     const ymd = `${now.getFullYear()}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
     const filename = path.join(options.logDir, `zenweb-metric.${ymd}.log`);
     const mem = process.memoryUsage();
-    const loadavg = os.loadavg();
     const data = {
-      hostname: os.hostname(),
-      pid: process.pid,
+      name,
       timestamp: Math.round(now / 1000),
       cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
       event_delay: Math.max(0, elapsedTime - sampleInterval),
@@ -93,9 +93,7 @@ function setup(core, options) {
       mem_external: mem.external,
       mem_array_buffers: mem.arrayBuffers,
       mem_os_free: os.freemem(),
-      loadavg_1: loadavg[0],
-      loadavg_5: loadavg[1],
-      loadavg_15: loadavg[2],
+      load_percentage: os.loadavg()[0] / cpuCount,
       active_handles: process._getActiveHandles().length,
     };
     // for (const [type, counter] of Object.entries(asyncActiveCounter)) {
