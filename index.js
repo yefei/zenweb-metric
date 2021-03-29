@@ -66,13 +66,6 @@ function setup(core, options) {
     const requests_elapsed = core._metricRequestsElapsed - lastRequestsElapsed;
     const apdexTolerates = core._metricApdexTolerates - lastApdexTolerates;
 
-    // reset
-    lastSampleCpuUsage = process.cpuUsage();
-    lastSampleTime = process.hrtime();
-    lastRequests = core._metricRequests;
-    lastRequestsElapsed = core._metricRequestsElapsed;
-    lastApdexTolerates = core._metricApdexTolerates;
-
     // write
     const now = new Date();
     const m = now.getMonth() + 1;
@@ -87,23 +80,35 @@ function setup(core, options) {
       cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
       event_delay: Math.max(0, elapsedTime - sampleInterval),
       mem_rss: mem.rss,
-      mem_heap_total: mem.heapTotal,
-      mem_heap_used: mem.heapUsed,
-      mem_external: mem.external,
-      mem_array_buffers: mem.arrayBuffers,
-      mem_os_free: os.freemem(),
+      // mem_heap_total: mem.heapTotal,
+      // mem_heap_used: mem.heapUsed,
+      // mem_external: mem.external,
+      // mem_array_buffers: mem.arrayBuffers,
+      // mem_os_free: os.freemem(),
       load_percentage: os.loadavg()[0] / cpuCount,
       active_handles: process._getActiveHandles().length,
-      requests,
-      requests_elapsed,
-      apdex: requests ? ((requests - apdexTolerates) + apdexTolerates * 0.5) / requests : -1,
     };
+    if (requests > 0) {
+      data.requests = requests;
+      data.requests_elapsed = requests_elapsed;
+      data.qps = requests / elapsedTime * 1000;
+      data.apdex = ((requests - apdexTolerates) + apdexTolerates * 0.5) / requests;
+    }
+
     debug('write log: %s, %o', filename, data);
+
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
       if (err) {
         core.log.error('zenweb:metric write log error: %s', err.message);
       }
     });
+
+    // reset
+    lastSampleCpuUsage = process.cpuUsage();
+    lastSampleTime = process.hrtime();
+    lastRequests = core._metricRequests;
+    lastRequestsElapsed = core._metricRequestsElapsed;
+    lastApdexTolerates = core._metricApdexTolerates;
   }, sampleInterval);
 }
 
