@@ -96,7 +96,7 @@ function setup(core, options) {
       active_handles: process._getActiveHandles().length,
       requests,
       requests_elapsed,
-      apdex: requests ? ((requests - apdexTolerates) + apdexTolerates * 0.5) / requests : null,
+      apdex: requests ? ((requests - apdexTolerates) + apdexTolerates * 0.5) / requests : -1,
     };
     debug('write log: %s, %o', filename, data);
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
