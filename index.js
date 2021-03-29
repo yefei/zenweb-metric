@@ -9,14 +9,20 @@ function hrtime2ms(time) {
   return time[0] * 1e3 + time[1] * 1e-6;
 }
 
-async function metricMiddleware(ctx, next) {
-  ctx.core._metricRequests++;
-  ctx._metricStartTime = process.hrtime();
-  try {
-    await next();
-  } finally {
-    ctx.core._metricRequestsElapsed += hrtime2ms(process.hrtime(ctx._metricStartTime));
-  }
+function getMetricMiddleware(core, options) {
+  return async function metricMiddleware(ctx, next) {
+    core._metricRequests++;
+    ctx._metricStartTime = process.hrtime();
+    try {
+      await next();
+    } finally {
+      const elapsed = hrtime2ms(process.hrtime(ctx._metricStartTime));
+      core._metricRequestsElapsed += elapsed;
+      if (elapsed > options.apdexSatisfied) {
+        core._metricApdexTolerates++;
+      }
+    }
+  };
 }
 
 /**
@@ -24,16 +30,19 @@ async function metricMiddleware(ctx, next) {
  * @param {*} [options]
  */
 function setup(core, options) {
-  core._metricRequests = 0;
-  core._metricRequestsElapsed = 0;
-  core.koa.use(metricMiddleware);
-
   options = Object.assign({
     name: process.env.npm_package_name || os.hostname(),
     logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
     logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
+    apdexSatisfied: 100,
   }, options);
   debug('options: %o', options);
+
+  core._metricRequests = 0;
+  core._metricRequestsElapsed = 0;
+  core._metricApdexTolerates = 0;
+
+  core.koa.use(getMetricMiddleware(core, options));
 
   if (!fs.existsSync(options.logDir)) {
     fs.mkdirSync(options.logDir);
@@ -42,10 +51,12 @@ function setup(core, options) {
   const instance = `${os.hostname()}-${process.pid}`;
   const cpuCount = os.cpus().length;
   const sampleInterval = options.logInterval * 1000;
+
   let lastSampleCpuUsage = process.cpuUsage();
   let lastSampleTime = process.hrtime();
   let lastRequests = 0;
   let lastRequestsElapsed = 0;
+  let lastApdexTolerates = 0;
 
   setInterval(() => {
     // collect
@@ -53,12 +64,14 @@ function setup(core, options) {
     const cpuUsage = process.cpuUsage(lastSampleCpuUsage);
     const requests = core._metricRequests - lastRequests;
     const requests_elapsed = core._metricRequestsElapsed - lastRequestsElapsed;
+    const apdexTolerates = core._metricApdexTolerates - lastApdexTolerates;
 
     // reset
     lastSampleCpuUsage = process.cpuUsage();
     lastSampleTime = process.hrtime();
     lastRequests = core._metricRequests;
     lastRequestsElapsed = core._metricRequestsElapsed;
+    lastApdexTolerates = core._metricApdexTolerates;
 
     // write
     const now = new Date();
@@ -83,6 +96,7 @@ function setup(core, options) {
       active_handles: process._getActiveHandles().length,
       requests,
       requests_elapsed,
+      apdex: requests ? ((requests - apdexTolerates) + apdexTolerates * 0.5) / requests : null,
     };
     debug('write log: %s, %o', filename, data);
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
