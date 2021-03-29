@@ -9,16 +9,29 @@ function hrtime2ms(time) {
   return time[0] * 1e3 + time[1] * 1e-6;
 }
 
+async function metricMiddleware(ctx, next) {
+  ctx.core._metricRequests++;
+  ctx._metricStartTime = process.hrtime();
+  try {
+    await next();
+  } finally {
+    ctx.core._metricRequestsElapsed += hrtime2ms(process.hrtime(ctx._metricStartTime));
+  }
+}
+
 /**
  * @param {import('@zenweb/core').Core} core 
  * @param {*} [options]
  */
 function setup(core, options) {
+  core._metricRequests = 0;
+  core._metricRequestsElapsed = 0;
+  core.koa.use(metricMiddleware);
+
   options = Object.assign({
     name: process.env.npm_package_name || os.hostname(),
     logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
     logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
-    // asyncHooks: ['TCPCONNECTWRAP', 'HTTPINCOMINGMESSAGE', 'HTTPCLIENTREQUEST'],
   }, options);
   debug('options: %o', options);
 
@@ -26,55 +39,26 @@ function setup(core, options) {
     fs.mkdirSync(options.logDir);
   }
 
-  /*
-   * async counter
-   * @type { {[key: string]: { active: Set<number>, init: number, destroy: number }} }
-   */
-  /*
-  const asyncActiveCounter = {};
-  if (options.asyncHooks && options.asyncHooks.length) {
-    options.asyncHooks.forEach(type => {
-      asyncActiveCounter[type] = {
-        active: new Set(),
-        init: 0,
-        destroy: 0,
-      };
-    });
-    async_hooks.createHook({
-      init(asyncId, type, triggerAsyncId, resource) {
-        if (type in asyncActiveCounter) {
-          asyncActiveCounter[type].active.add(asyncId);
-          asyncActiveCounter[type].init++;
-        }
-        console.log(`${type}(${asyncId})`);
-      },
-      destroy(asyncId) {
-        for (const counter of Object.values(asyncActiveCounter)) {
-          if (counter.active.has(asyncId)) {
-            counter.active.delete(asyncId);
-            counter.destroy++;
-            break;
-          }
-        }
-      }
-    }).enable();
-  }
-  */
-
   const instance = `${os.hostname()}-${process.pid}`;
   const cpuCount = os.cpus().length;
   const sampleInterval = options.logInterval * 1000;
   let lastSampleCpuUsage = process.cpuUsage();
   let lastSampleTime = process.hrtime();
+  let lastRequests = 0;
+  let lastRequestsElapsed = 0;
 
   setInterval(() => {
     // collect
     const elapsedTime = hrtime2ms(process.hrtime(lastSampleTime));
     const cpuUsage = process.cpuUsage(lastSampleCpuUsage);
+    const requests = core._metricRequests - lastRequests;
+    const requests_elapsed = core._metricRequestsElapsed - lastRequestsElapsed;
 
     // reset
     lastSampleCpuUsage = process.cpuUsage();
     lastSampleTime = process.hrtime();
+    lastRequests = core._metricRequests;
+    lastRequestsElapsed = core._metricRequestsElapsed;
 
     // write
     const now = new Date();
@@ -97,11 +81,9 @@ function setup(core, options) {
       mem_os_free: os.freemem(),
       load_percentage: os.loadavg()[0] / cpuCount,
       active_handles: process._getActiveHandles().length,
+      requests,
+      requests_elapsed,
     };
-    // for (const [type, counter] of Object.entries(asyncActiveCounter)) {
-    //   data[`async_${type}_init`] = counter.init;
-    //   data[`async_${type}_destroy`] = counter.destroy;
-    // }
     debug('write log: %s, %o', filename, data);
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
       if (err) {
