@@ -15,6 +15,7 @@ function hrtime2ms(time) {
  */
 function setup(core, options) {
   options = Object.assign({
+    name: process.env.npm_package_name || os.hostname(),
     logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
     logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
     // asyncHooks: ['TCPCONNECTWRAP', 'HTTPINCOMINGMESSAGE', 'HTTPCLIENTREQUEST'],
@@ -60,7 +61,7 @@ function setup(core, options) {
   }
   */
 
-  const name = `${os.hostname()}:${process.pid}`;
+  const instance = `${os.hostname()}-${process.pid}`;
   const cpuCount = os.cpus().length;
   const sampleInterval = options.logInterval * 1000;
   let lastSampleCpuUsage = process.cpuUsage();
@@ -83,7 +84,8 @@ function setup(core, options) {
     const filename = path.join(options.logDir, `zenweb-metric.${ymd}.log`);
     const mem = process.memoryUsage();
     const data = {
-      name,
+      name: options.name,
+      instance,
       timestamp: Math.round(now / 1000),
       cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
       event_delay: Math.max(0, elapsedTime - sampleInterval),
@@ -103,7 +105,7 @@ function setup(core, options) {
     debug('write log: %s, %o', filename, data);
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
       if (err) {
-        core.log.error('zenweb:metric write log file error: %s', err.message);
+        core.log.error('zenweb:metric write log error: %s', err.message);
       }
     });
   }, sampleInterval);
