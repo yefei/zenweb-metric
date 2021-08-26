@@ -35,9 +35,16 @@ function setup(core, options) {
     logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
     logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
     apdexSatisfied: 100,
-    enableProcessTitle: true, // 是否显示在进程标题中
+    enableProcessTitle: false, // 是否显示在进程标题中
   }, options);
   debug('options: %o', options);
+
+  // if (options.enableProcessTitle) {
+  //   const commandTitleLength = `zenweb: ${options.name} [00000] 100%`.length;
+  //   if (process.title.length < commandTitleLength) {
+  //     console.warn(`zenweb-metric: enableProcessTitle=true The command line length cannot be less than ${commandTitleLength}`);
+  //   }
+  // }
 
   core._metricRequests = 0;
   core._metricRequestsElapsed = 0;
@@ -101,7 +108,7 @@ function setup(core, options) {
     };
     debug('write log: %s, %o', filename, data);
     if (options.enableProcessTitle) {
-      process.title = `zenweb: ${data.name} [${data.active_handles}] ${data.apdex ? Math.round(data.apdex * 100) : '-'}%`;
+      process.title = `zenweb: ${data.name} [${data.active_handles}] ${data.apdex > 0 ? Math.round(data.apdex * 100) : '-'}%`;
     }
     fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
       if (err) {
