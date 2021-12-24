@@ -1,11 +1,17 @@
 'use strict';
 
-const http = require('http');
-
 process.env.DEBUG = '*';
 
-const app = module.exports = require('zenweb').create();
-app.setup(require('..').setup);
+const http = require('http');
+const { Core } = require('@zenweb/core');
+const { default: router } = require('@zenweb/router');
+const { default: meta } = require('@zenweb/meta');
+const { default: metric } = require('../dist/index');
+
+const app = module.exports = new Core();
+app.setup(meta());
+app.setup(metric());
+app.setup(router());
 app.boot().then(() => {
   app.router.get('/', ctx => {
     ctx.body = 'aaa';

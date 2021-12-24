@@ -1,11 +1,16 @@
 {
   "name": "@zenweb/metric",
-  "version": "1.3.2",
+  "version": "2.3.0",
   "description": "Zenweb Metric module",
-  "main": "index.js",
+  "exports": "./dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepublishOnly": "tsc --build --clean && tsc",
+    "dev": "cd example && node app"
   },
+  "files": [
+    "dist"
+  ],
   "author": {
     "name": "YeFei",
     "email": "316606233@qq.com"
@@ -27,11 +32,8 @@
     "url": "https://github.com/yefei/zenweb-metric/issues"
   },
   "devDependencies": {
-    "eslint": "^7.16.0",
-    "koa": "^2.13.1",
-    "zenweb": "^1.5.1"
-  },
-  "dependencies": {
-    "debug": "^4.3.1"
+    "@zenweb/core": "^2.3.2",
+    "@zenweb/meta": "^2.3.0",
+    "@zenweb/router": "^2.3.0"
   }
 }
