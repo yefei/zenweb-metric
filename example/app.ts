@@ -1,12 +1,8 @@
-'use strict';
-
-process.env.DEBUG = '*';
-
-const http = require('http');
-const { Core } = require('@zenweb/core');
-const { default: router } = require('@zenweb/router');
-const { default: meta } = require('@zenweb/meta');
-const { default: metric } = require('../dist/index');
+import * as http from 'http';
+import { Core } from '@zenweb/core';
+import router from '@zenweb/router';
+import meta from '@zenweb/meta';
+import metric from '../src/index';
 
 const app = module.exports = new Core();
 app.setup(meta());

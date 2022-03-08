@@ -5,8 +5,8 @@
   "exports": "./dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "prepublishOnly": "tsc --build --clean && tsc",
-    "dev": "cd example && node app"
+    "prepublishOnly": "rm -fr dist && tsc",
+    "dev": "cd example && DEBUG=* ts-node app.ts"
   },
   "files": [
     "dist"
@@ -32,8 +32,8 @@
     "url": "https://github.com/yefei/zenweb-metric/issues"
   },
   "devDependencies": {
-    "@zenweb/core": "^2.3.2",
-    "@zenweb/meta": "^2.3.0",
+    "@zenweb/core": "^2.4.1",
+    "@zenweb/meta": "^2.3.2",
     "@zenweb/router": "^2.3.0"
   }
 }
