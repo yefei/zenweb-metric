@@ -24,7 +24,7 @@ export interface MetricOption {
   logInterval?: number;
 
   /**
-   * apdex 超时值(毫秒)
+   * apdex 满意值(毫秒内)
    * @default 100
    */
   apdexSatisfied?: number;
@@ -95,11 +95,11 @@ export default function setup(option?: MetricOption): SetupFunction {
         cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
         event_delay: Math.max(0, elapsedTime - sampleInterval),
         mem_rss: mem.rss,
-        // mem_heap_total: mem.heapTotal,
-        // mem_heap_used: mem.heapUsed,
-        // mem_external: mem.external,
-        // mem_array_buffers: mem.arrayBuffers,
-        // mem_os_free: os.freemem(),
+        mem_heap_total: mem.heapTotal,
+        mem_heap_used: mem.heapUsed,
+        mem_external: mem.external,
+        mem_array_buffers: mem.arrayBuffers,
+        mem_os_free: os.freemem(),
         load_percentage: os.loadavg()[0] / cpuCount,
         active_handles: proceeActiveHandles().length,
       };
