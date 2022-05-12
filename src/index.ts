@@ -7,7 +7,7 @@ import { SetupFunction } from '@zenweb/core';
 export interface MetricOption {
   /**
    * 应用名称
-   * @default process.env.npm_package_name || os.hostname()
+   * @default process.env.ZENWEB_METRIC_NAME || process.env.npm_package_name || os.hostname()
    */
   name?: string;
 
@@ -25,7 +25,7 @@ export interface MetricOption {
 
   /**
    * apdex 满意值(毫秒内)
-   * @default 100
+   * @default process.env.ZENWEB_METRIC_APDEX_SATISFIED || 100
    */
   apdexSatisfied?: number;
 
@@ -37,10 +37,10 @@ export interface MetricOption {
 }
 
 const defaultOption: MetricOption = {
-  name: process.env.npm_package_name || os.hostname(),
+  name: process.env.ZENWEB_METRIC_NAME || process.env.npm_package_name || os.hostname(),
   logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
   logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
-  apdexSatisfied: 100,
+  apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED) || 100,
   enableProcessTitle: false,
 };
 
