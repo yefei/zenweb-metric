@@ -121,7 +121,7 @@ export default function setup(option?: MetricOption): SetupFunction {
       // 写入文件
       return new Promise<void>((resolve, reject) => {
         if (option.logDir) {
-          const filename = option.logDir ?? path.join(option.logDir, getFilename());
+          const filename = path.join(option.logDir, getFilename());
           fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
             if (err) return reject(err);
             resolve();
