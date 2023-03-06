@@ -8,7 +8,7 @@ const app = module.exports = new Core();
 app.setup(meta());
 app.setup(metric());
 app.setup(router());
-app.boot().then(() => {
+app.setup(() => {
   app.router.get('/', ctx => {
     ctx.body = 'aaa';
   });
@@ -18,5 +18,5 @@ app.boot().then(() => {
     }).end();
     ctx.body = 'bbb';
   });
-  app.listen();
 });
+app.start();

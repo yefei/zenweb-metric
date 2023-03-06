@@ -13,7 +13,7 @@ export interface MetricOption {
 
   /**
    * 日志输出目录
-   * @default process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir()
+   * @default process.env.ZENWEB_METRIC_LOG_DIR
    */
   logDir?: string;
 
@@ -38,7 +38,7 @@ export interface MetricOption {
 
 const defaultOption: MetricOption = {
   name: process.env.ZENWEB_METRIC_NAME || process.env.npm_package_name || os.hostname(),
-  logDir: process.env.ZENWEB_METRIC_LOG_DIR || os.tmpdir(),
+  logDir: process.env.ZENWEB_METRIC_LOG_DIR,
   logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
   apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED) || 100,
   enableProcessTitle: false,
@@ -56,7 +56,7 @@ export default function setup(option?: MetricOption): SetupFunction {
     setup.debug('option: %o', option);
     setup.checkContextProperty('startTime', '缺少 @zenweb/meta 模块');
 
-    if (!fs.existsSync(option.logDir)) {
+    if (option.logDir && !fs.existsSync(option.logDir)) {
       fs.mkdirSync(option.logDir);
     }
   
@@ -72,8 +72,8 @@ export default function setup(option?: MetricOption): SetupFunction {
     let metricRequests = 0;
     let metricRequestsElapsed = 0;
     let metricApdexTolerates = 0;
-  
-    setInterval(() => {
+
+    function collect() {
       // collect
       const elapsedTime = Date.now() - lastSampleTime;
       const cpuUsage = process.cpuUsage(lastSampleCpuUsage);
@@ -82,16 +82,11 @@ export default function setup(option?: MetricOption): SetupFunction {
       const apdexTolerates = metricApdexTolerates - lastApdexTolerates;
   
       // write
-      const now = new Date();
-      const m = now.getMonth() + 1;
-      const d = now.getDate();
-      const ymd = `${now.getFullYear()}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
-      const filename = path.join(option.logDir, `zenweb-metric.${ymd}.log`);
       const mem = process.memoryUsage();
       const data: { [key: string]: any } = {
         name: option.name,
         instance,
-        timestamp: Math.round(now.getTime() / 1000),
+        timestamp: Math.round(Date.now() / 1000),
         cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
         event_delay: Math.max(0, elapsedTime - sampleInterval),
         mem_rss: mem.rss,
@@ -109,25 +104,35 @@ export default function setup(option?: MetricOption): SetupFunction {
         data.qps = requests / elapsedTime * 1000;
         data.apdex = ((requests - apdexTolerates) + apdexTolerates * 0.5) / requests;
       }
-  
-      setup.debug('write log: %s, %o', filename, data);
-  
-      if (option.enableProcessTitle) {
-        process.title = `zenweb: ${data.name} [${data.active_handles}] ${data.qps||'-'}/QPS ${data.apdex > 0 ? Math.round(data.apdex * 100) : '-'}%`;
-      }
-      fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
-        if (err) {
-          console.error('zenweb:metric write log error: %s', err.message);
-        }
-      });
-  
+
       // reset
       lastSampleCpuUsage = process.cpuUsage();
       lastSampleTime = Date.now();
       lastRequests = metricRequests;
       lastRequestsElapsed = metricRequestsElapsed;
       lastApdexTolerates = metricApdexTolerates;
-    }, sampleInterval);
+  
+      if (option.enableProcessTitle) {
+        process.title = `zenweb: ${data.name} [${data.active_handles}] ${data.qps||'-'}/QPS ${data.apdex > 0 ? Math.round(data.apdex * 100) : '-'}%`;
+      }
+
+      setup.debug(data);
+
+      // 写入文件
+      return new Promise<void>((resolve, reject) => {
+        if (option.logDir) {
+          const filename = option.logDir ?? path.join(option.logDir, getFilename());
+          fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
+            if (err) return reject(err);
+            resolve();
+          });
+        } else {
+          resolve();
+        }
+      });
+    }
+  
+    const timer = setInterval(() => collect(), sampleInterval);
 
     setup.middleware(async function metricMiddleware(ctx, next) {
       metricRequests++;
@@ -141,6 +146,10 @@ export default function setup(option?: MetricOption): SetupFunction {
         }
       }
     });
+
+    setup.destroy(() => {
+      clearInterval(timer);
+    });
   }
 }
 
@@ -150,4 +159,12 @@ export default function setup(option?: MetricOption): SetupFunction {
 function proceeActiveHandles(): any[] {
   const p:any = process;
   return p._getActiveHandles();
+}
+
+function getFilename() {
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const ymd = `${now.getFullYear()}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
+  return `zenweb-metric.${ymd}.log`;
 }
