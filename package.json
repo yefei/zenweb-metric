@@ -1,6 +1,6 @@
 {
   "name": "@zenweb/metric",
-  "version": "2.5.0",
+  "version": "3.0.0",
   "description": "Zenweb Metric module",
   "exports": "./dist/index.js",
   "types": "dist/index.d.ts",
