@@ -22,7 +22,6 @@ app.setup(metric(/* 可选配置项 */));
 ## 配置项
 | 项 | 值类型 | 默认值 | 说明 |
 |----|-------|-------|-----|
-| name | `string` | `process.env.npm_package_name \|\| os.hostname()` | 应用名称 |
 | logDir | `string` | `process.env.ZENWEB_METRIC_LOG_DIR \|\| os.tmpdir()` | 日志输出目录 |
 | logInterval | `number` | `process.env.ZENWEB_METRIC_LOG_INTERVAL \|\| 10` | 日志输出间隔(秒) |
 | apdexSatisfied | `number` | `100` | apdex 满意值(毫秒内) |

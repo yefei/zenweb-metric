@@ -6,12 +6,6 @@ import { SetupFunction } from '@zenweb/core';
 
 export interface MetricOption {
   /**
-   * 应用名称
-   * @default process.env.ZENWEB_METRIC_NAME || process.env.npm_package_name || os.hostname()
-   */
-  name?: string;
-
-  /**
    * 日志输出目录
    * @default process.env.ZENWEB_METRIC_LOG_DIR
    */
@@ -37,7 +31,6 @@ export interface MetricOption {
 }
 
 const defaultOption: MetricOption = {
-  name: process.env.ZENWEB_METRIC_NAME || process.env.npm_package_name || os.hostname(),
   logDir: process.env.ZENWEB_METRIC_LOG_DIR,
   logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
   apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED) || 100,
@@ -60,6 +53,7 @@ export default function setup(option?: MetricOption): SetupFunction {
       fs.mkdirSync(option.logDir);
     }
   
+    const name = setup.core.name;
     const instance = `${os.hostname()}-${process.pid}`;
     const cpuCount = os.cpus().length;
     const sampleInterval = option.logInterval * 1000;
@@ -84,7 +78,7 @@ export default function setup(option?: MetricOption): SetupFunction {
       // write
       const mem = process.memoryUsage();
       const data: { [key: string]: any } = {
-        name: option.name,
+        name,
         instance,
         timestamp: Math.round(Date.now() / 1000),
         cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
