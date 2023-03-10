@@ -1,6 +1,6 @@
 {
   "name": "@zenweb/metric",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Zenweb Metric module",
   "exports": "./dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,9 +33,8 @@
     "url": "https://github.com/yefei/zenweb-metric/issues"
   },
   "devDependencies": {
-    "@zenweb/core": "^3.2.0",
-    "@zenweb/meta": "^2.4.0",
-    "@zenweb/router": "^3.1.1",
+    "@zenweb/core": "^3.5.1",
+    "@zenweb/router": "^3.3.0",
     "cross-env": "^7.0.3",
     "rimraf": "^4.3.0",
     "ts-node": "^10.9.1",

@@ -1,14 +1,12 @@
 import * as http from 'http';
 import { Core } from '@zenweb/core';
 import router from '@zenweb/router';
-import meta from '@zenweb/meta';
 import metric from '../src/index';
 
 const app = module.exports = new Core();
-app.setup(meta());
 app.setup(metric());
 app.setup(router());
-app.setup(() => {
+app.setup(function test() {
   app.router.get('/', ctx => {
     ctx.body = 'aaa';
   });

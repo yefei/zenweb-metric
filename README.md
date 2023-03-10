@@ -25,3 +25,9 @@ app.setup(metric(/* 可选配置项 */));
 | logDir | `string` | `process.env.ZENWEB_METRIC_LOG_DIR \|\| os.tmpdir()` | 日志输出目录 |
 | logInterval | `number` | `process.env.ZENWEB_METRIC_LOG_INTERVAL \|\| 10` | 日志输出间隔(秒) |
 | apdexSatisfied | `number` | `100` | apdex 满意值(毫秒内) |
+
+## Changelog
+
+### 3.2.0
+- null 检查
+- 不再依赖 meta 模块

@@ -1,4 +1,3 @@
-import '@zenweb/meta';
 import fs = require('fs');
 import os = require('os');
 import path = require('path');
@@ -32,13 +31,13 @@ export interface MetricOption {
 
 const defaultOption: MetricOption = {
   logDir: process.env.ZENWEB_METRIC_LOG_DIR,
-  logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL) || 10,
-  apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED) || 100,
+  logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL || '') || 10,
+  apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED || '') || 100,
   enableProcessTitle: false,
 };
 
-export default function setup(option?: MetricOption): SetupFunction {
-  option = Object.assign({}, defaultOption, option);
+export default function setup(opt?: MetricOption): SetupFunction {
+  const option = Object.assign({}, defaultOption, opt);
   // if (options.enableProcessTitle) {
   //   const commandTitleLength = `zenweb: ${option.name} [00000] 100%`.length;
   //   if (process.title.length < commandTitleLength) {
@@ -47,7 +46,6 @@ export default function setup(option?: MetricOption): SetupFunction {
   // }
   return function metric(setup) {
     setup.debug('option: %o', option);
-    setup.checkContextProperty('startTime', '缺少 @zenweb/meta 模块');
 
     if (option.logDir && !fs.existsSync(option.logDir)) {
       fs.mkdirSync(option.logDir);
@@ -56,7 +54,7 @@ export default function setup(option?: MetricOption): SetupFunction {
     const name = setup.core.name;
     const instance = `${os.hostname()}-${process.pid}`;
     const cpuCount = os.cpus().length;
-    const sampleInterval = option.logInterval * 1000;
+    const sampleInterval = (option.logInterval || 10) * 1000;
   
     let lastSampleCpuUsage = process.cpuUsage();
     let lastSampleTime = Date.now();
@@ -130,12 +128,13 @@ export default function setup(option?: MetricOption): SetupFunction {
 
     setup.middleware(async function metricMiddleware(ctx, next) {
       metricRequests++;
+      const startTime = Date.now();
       try {
         await next();
       } finally {
-        const elapsed = Date.now() - ctx.startTime;
+        const elapsed = Date.now() - startTime;
         metricRequestsElapsed += elapsed;
-        if (elapsed > option.apdexSatisfied) {
+        if (elapsed > (option.apdexSatisfied || 100)) {
           metricApdexTolerates++;
         }
       }
