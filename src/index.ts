@@ -21,29 +21,16 @@ export interface MetricOption {
    * @default process.env.ZENWEB_METRIC_APDEX_SATISFIED || 100
    */
   apdexSatisfied?: number;
-
-  /**
-   * 是否在进程标题中显示
-   * @default false
-   */
-  enableProcessTitle?: boolean;
 }
 
 const defaultOption: MetricOption = {
   logDir: process.env.ZENWEB_METRIC_LOG_DIR,
   logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL || '') || 10,
   apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED || '') || 100,
-  enableProcessTitle: false,
 };
 
 export default function setup(opt?: MetricOption): SetupFunction {
   const option = Object.assign({}, defaultOption, opt);
-  // if (options.enableProcessTitle) {
-  //   const commandTitleLength = `zenweb: ${option.name} [00000] 100%`.length;
-  //   if (process.title.length < commandTitleLength) {
-  //     console.warn(`zenweb-metric: enableProcessTitle=true The command line length cannot be less than ${commandTitleLength}`);
-  //   }
-  // }
   return function metric(setup) {
     setup.debug('option: %o', option);
 
@@ -104,10 +91,6 @@ export default function setup(opt?: MetricOption): SetupFunction {
       lastRequestsElapsed = metricRequestsElapsed;
       lastApdexTolerates = metricApdexTolerates;
   
-      if (option.enableProcessTitle) {
-        process.title = `zenweb: ${data.name} [${data.active_handles}] ${data.qps||'-'}/QPS ${data.apdex > 0 ? Math.round(data.apdex * 100) : '-'}%`;
-      }
-
       setup.debug(data);
 
       // 写入文件
