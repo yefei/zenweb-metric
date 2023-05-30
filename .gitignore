@@ -12,3 +12,5 @@ run/
 *.un~
 .npmrc
 dist/
+thunder-tests/
+example/*.log

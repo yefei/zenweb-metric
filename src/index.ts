@@ -1,20 +1,25 @@
-import fs = require('fs');
-import os = require('os');
-import path = require('path');
+import * as os from 'os';
 import { SetupFunction } from '@zenweb/core';
+import { FileBufferStream, FileBufferStreamOption, RootLogger } from 'zenlog.js';
 
-export interface MetricOption {
+export interface MetricOption extends FileBufferStreamOption {
   /**
    * 日志输出目录
-   * @default process.env.ZENWEB_METRIC_LOG_DIR
+   * @default process.env.LOG_DIR || '/tmp'
    */
-  logDir?: string;
+  dir?: string;
 
   /**
-   * 日志输出间隔(秒)
-   * @default process.env.ZENWEB_METRIC_LOG_INTERVAL || 10
+   * 日志文件名
+   * @default 'zenweb-metric.{yyyy}-{mm}-{dd}.log'
    */
-  logInterval?: number;
+  filename?: string;
+
+  /**
+   * 取样间隔(毫秒)
+   * @default process.env.ZENWEB_METRIC_SAMPLE_INTERVAL || 10000
+   */
+  sampleInterval?: number;
 
   /**
    * apdex 满意值(毫秒内)
@@ -24,9 +29,10 @@ export interface MetricOption {
 }
 
 const defaultOption: MetricOption = {
-  logDir: process.env.ZENWEB_METRIC_LOG_DIR,
-  logInterval: parseInt(process.env.ZENWEB_METRIC_LOG_INTERVAL || '') || 10,
-  apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED || '') || 100,
+  dir: process.env.LOG_DIR,
+  filename: 'zenweb-metric.{yyyy}-{mm}-{dd}.log',
+  sampleInterval: parseInt(process.env.ZENWEB_METRIC_SAMPLE_INTERVAL || ''),
+  apdexSatisfied: parseInt(process.env.ZENWEB_METRIC_APDEX_SATISFIED || ''),
 };
 
 export default function setup(opt?: MetricOption): SetupFunction {
@@ -34,14 +40,14 @@ export default function setup(opt?: MetricOption): SetupFunction {
   return function metric(setup) {
     setup.debug('option: %o', option);
 
-    if (option.logDir && !fs.existsSync(option.logDir)) {
-      fs.mkdirSync(option.logDir);
-    }
-  
-    const name = setup.core.name;
-    const instance = `${os.hostname()}-${process.pid}`;
+    const logger = new RootLogger({
+      name: setup.core.name,
+      instance: `${os.hostname()}-${process.pid}`,
+    });
+    logger.addStream(new FileBufferStream(option));
+
     const cpuCount = os.cpus().length;
-    const sampleInterval = (option.logInterval || 10) * 1000;
+    const sampleInterval = option.sampleInterval || 10000;
   
     let lastSampleCpuUsage = process.cpuUsage();
     let lastSampleTime = Date.now();
@@ -63,8 +69,6 @@ export default function setup(opt?: MetricOption): SetupFunction {
       // write
       const mem = process.memoryUsage();
       const data: { [key: string]: any } = {
-        name,
-        instance,
         timestamp: Math.round(Date.now() / 1000),
         cpu_percentage: (cpuUsage.user + cpuUsage.system) / 1000 / elapsedTime,
         event_delay: Math.max(0, elapsedTime - sampleInterval),
@@ -94,17 +98,7 @@ export default function setup(opt?: MetricOption): SetupFunction {
       setup.debug(data);
 
       // 写入文件
-      return new Promise<void>((resolve, reject) => {
-        if (option.logDir) {
-          const filename = path.join(option.logDir, getFilename());
-          fs.appendFile(filename, JSON.stringify(data) + '\n', 'utf-8', err => {
-            if (err) return reject(err);
-            resolve();
-          });
-        } else {
-          resolve();
-        }
-      });
+      logger.record(data);
     }
   
     const timer = setInterval(() => collect(), sampleInterval);
@@ -123,8 +117,9 @@ export default function setup(opt?: MetricOption): SetupFunction {
       }
     });
 
-    setup.destroy(() => {
+    setup.destroy(async () => {
       clearInterval(timer);
+      await logger.close();
     });
   }
 }
@@ -135,12 +130,4 @@ export default function setup(opt?: MetricOption): SetupFunction {
 function proceeActiveHandles(): any[] {
   const p:any = process;
   return p._getActiveHandles();
-}
-
-function getFilename() {
-  const now = new Date();
-  const m = now.getMonth() + 1;
-  const d = now.getDate();
-  const ymd = `${now.getFullYear()}-${m < 10 ? '0' : ''}${m}-${d < 10 ? '0' : ''}${d}`;
-  return `zenweb-metric.${ymd}.log`;
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.3.0] - 2023-5-30
+- 使用 zenlog.js 输出日志
+
 ## 3.2.1
 - 删除无用选项: enableProcessTitle
 
